@@ -89,15 +89,17 @@ def metric_per_category_over_time(metric, category, time):
 
 
 
-# allows a direct command to be passed to the database - dangerous
-# command is raw SQL that will be used to directly query the database
+
 #
-# -- FURTHER INFORMATION IN THE DOCUMENTATION FILE --
-# 
+# THIS IS DEBUGGING CODE, DELETE IN PRODUCTION, THIS IS PURELY FOR INTERNAL USE WHEN ACCESSING THE DATABASE SYSTEM, IT IS INCREDIBLY INSECURE
+#
 @app.route("/command_database/<command>")
 def command_database(command):
-    results = tt.command_database(command)
-    return jsonify(results)
+    if request.remote_addr != "127.0.0.1":
+        return jsonify("ACCESS DENIED")
+    else:
+        results = tt.command_database(command)
+        return jsonify(results)
 
 
 
