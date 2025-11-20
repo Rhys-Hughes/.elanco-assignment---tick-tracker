@@ -8,16 +8,6 @@ def tt_connect_to_database():
 
 
 
-# ========================================================================================================
-#                                               SEARCH
-# ========================================================================================================
-
-# search_term_dictionary : a dictionary pairing a data field with its desired value, eg {"location" : "Liverpool", "species" : "Marsh tick"}
-# case_sensitivity : either "case sensitive" or "not case sensitive", used to set the case_sensitivity_mark
-                    # case_sensitivity_mark : either "LOWER" or "", inserted into SQL to force it to ignore cases or not by either making everything
-                    #                         lower case, or leaving everything as it is
-# search condition : the condition that determines the relationship between the search terms, "and" or "or", for example, location = "Liverpool" AND species = "marsh tick"
-
 # checks the case sensitivity and sets the case_sensitivity_mark
 def case_sensitivity_check(search_term_dictionary, case_sensitivity):
 
@@ -37,16 +27,18 @@ def case_sensitivity_check(search_term_dictionary, case_sensitivity):
     return search_term_dictionary, case_sensitivity_mark
 
 
-def generate_SELECT_criteria(search_term_dictionary, search_condition, case_sensitivity_mark):
+
+# generates a string containing the select criteria of an SQL select statement
+def generate_SELECT_criteria(term_dictionary, search_condition, case_sensitivity_mark):
     # what we will store unformatted criteria in
     criteria_list = []
 
     # each search term will be accounted for
-    for key, term in search_term_dictionary.items():
+    for key, term in term_dictionary.items():
 
         # this will generate a chunk of the SQL syntax, it could look something like:
         # "LOWER(`location`) = LOWER('Liverpool')", or "(`location`) = ('Liverpool')" if there is case sensitivity
-        criteria_list.append(f"{case_sensitivity_mark}(`{key}`) = {case_sensitivity_mark}('{term}')")
+        criteria_list.append(f"{case_sensitivity_mark}(`?`) = {case_sensitivity_mark}('?')")
 
     # now we stitch together the individual criteria using the search_condition (and/or)
     search_condition = search_condition.upper() # <-- this is mostly for formatting since SQL should be upper case
@@ -63,7 +55,18 @@ def generate_SELECT_criteria(search_term_dictionary, search_condition, case_sens
             criteria_string += f"{criteria_list[i]} "
         
     return criteria_string
-    
+
+
+
+# ========================================================================================================
+#                                               SEARCH
+# ========================================================================================================
+
+# search_term_dictionary : a dictionary pairing a data field with its desired value, eg {"location" : "Liverpool", "species" : "Marsh tick"}
+# case_sensitivity : either "case sensitive" or "not case sensitive", used to set the case_sensitivity_mark
+                    # case_sensitivity_mark : either "LOWER" or "", inserted into SQL to force it to ignore cases or not by either making everything
+                    #                         lower case, or leaving everything as it is
+# search condition : the condition that determines the relationship between the search terms, "and" or "or", for example, location = "Liverpool" AND species = "marsh tick"
 
 # search the data set for time range and location, adding species too
 def search(search_term_dictionary, search_condition, case_sensitivity):
@@ -101,7 +104,7 @@ def search(search_term_dictionary, search_condition, case_sensitivity):
 # ========================================================================================================
 
 # filter out or filter in specific ranges of data, eg locations, times, etc
-def filter(filter_term_dictionary, filter_condition,case_sensitivity):
+def filter(filter_term_dictionary, filter_condition, case_sensitivity):
     connection, cursor = tt_connect_to_database()
 
 

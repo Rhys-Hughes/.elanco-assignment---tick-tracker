@@ -68,10 +68,15 @@ def commit_database(connection):
 
 
 # generic query function
-def command_database(cursor, command):
+def command_database(cursor, command, arguments = None):
     try:
-        cursor.execute(command)
-        return cursor.fetchall()
+        #inserts data into the arguments placeholders
+        if arguments != None:
+            cursor.execute(command, arguments)
+        else:
+            cursor.execute(command)
+
+        return cursor.fetchall()           
     except:
         return "!!! - COMMAND FAILED - !!!"
 
