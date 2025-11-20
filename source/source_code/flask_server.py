@@ -3,6 +3,8 @@ import tick_tracker as tt
 
 app = Flask(__name__)
 
+DATABASE_INFORMATION = tt.tt_get_database_information()
+
 # this is a basic connection test that shows connectivity with the database as well as showing a test variable passed in
 @app.route("/connection_test/<test_var>")
 def connection_test(test_var):
@@ -12,43 +14,89 @@ def connection_test(test_var):
 
 
 
-# this is the search function, it asks for 2 terms
-# the search_term_dictionary is an associative array/dictionary which marks what fields and what values are desired
-# the search_condition is the logical condition used, for example AND, or OR
-# case sensitivity determines whether or not the case of the search conditions matters
+# this is the search function
+# Returns values that meet the search criteria
+# 
+#   - search_term_dictionary : dictionary : {"database column" : ["desired values"], "database column" : "desired value"} -> defines the columns and their desired terms 
+#   - search_condition       : string     : "and" or "or" -> determines if a record must have all of the terms, or just one   
+#   - case_sensitivity       : string     : "case sensitive" or "not case sensitive" -> determines if the search will check the case of the field when comparing
 #
 # -- FURTHER INFORMATION IN THE DOCUMENTATION FILE --
-#
 @app.route("/search/<search_term_dictionary>/<search_condition>/<case_sensitivity>")
 def search(search_term_dictionary, search_condition, case_sensitivity):
 
-    # catches early errors like incorrectly formatted conditions
-    if (search_condition == "or" or search_condition == "and") and (case_sensitivity == "case sensitive" or case_sensitivity == "not case sensitive"):
+    #validation checking
+    search_condition_valid = (search_condition == "or" or search_condition == "and")
+    case_sensitivity_valid = (case_sensitivity == "case sensitive" or case_sensitivity == "not case sensitive")
 
-        # actually does the seach
+    #ensuring that the correct database columns are referenced
+    term_columns_valid = True
+    for key in search_term_dictionary:
+        if not (key in DATABASE_INFORMATION["database_columns"]):
+            term_columns_valid = False
+
+    # catches early errors like incorrectly formatted conditions and columns
+    if search_condition_valid and case_sensitivity_valid and term_columns_valid:
+
+        # calling the function that actually does the search
         results = tt.search(search_term_dictionary, search_condition, case_sensitivity)
 
         if results == "error":
-            return jsonify({"ERROR" : "Failed call, ensure search_term_dictionary is correctly formatted"})
+            return jsonify({"ERROR" : "Failed call"})
         else:
             return jsonify(results)
         
     else:
-        return jsonify({"ERROR" : "Failed call, please ensure that search_condition is 'or' or 'and', and that is case_sensitivity is 'case sensitive' or 'not case sensitive'"})
+        return jsonify({"ERROR" : "Failed search call", 
+                        "SEARCH CONDITION VALID" : search_condition_valid, 
+                        "CASE SENSITIVITY VALID" : case_sensitivity_valid,
+                        "TERM COLUMNS VALID" : term_columns_valid,
+                        "---" : "please reference the relevant documentation on search for more information"})
 
 
 
-# this is the word filter function, it asks for 2 terms
-# the filter_term_dictionary is a dictionary which marks what fields are filtered, and by what values
-# note that dates/times are valid here, from_date, from_time, to_date, and to_time are all accepted
-# the filter_condition marks whether this is an inclusionary or exclusionary filter
+# this is the filter function
+# Returns values that either meet, or do nor meet the filter conditions
+# 
+#   - filter_term_dictionary : dictionary : {"database column" : ["desired values"], "database column" : "desired value"} -> defines the columns and their desired terms 
+#   - filter_condition       : string     : "include" or "exclude" -> determines if a record must have, or must not have the terms   
+#   - case_sensitivity       : string     : "case sensitive" or "not case sensitive" -> determines if the search will check the case of the field when comparing
+#   - time_span_dictionary   : dictionary : {"date_from" : "yyyy.mm.dd", "date_to" : "yyyy.mm.dd", "time_from" : "hh.mm.ss", "time_to" : "hh.mm.ss"} -> defines a time span that the filter must be within
 #
 # -- FURTHER INFORMATION IN THE DOCUMENTATION FILE --
-#
-@app.route("/filter/<filter_term_dictionary>/<filter_condition>/<case_sensitivity>")
-def filter(filter_term_dictionary, filter_condition, case_sensitivity):
-    results = tt.filter(filter_term_dictionary, filter_condition,case_sensitivity)
-    return jsonify(results)
+
+# to do : MAKE THE FILTER ACCEPT TIME CONSTRAINTS 
+
+@app.route("/filter/<filter_term_dictionary>/<filter_condition>/<case_sensitivity>/<time_span_dictionary>")
+def filter(filter_term_dictionary, filter_condition, case_sensitivity, time_span_dictionary):
+
+    #validation checking
+    filter_condition_valid = (filter_condition == "include" or filter_condition == "exclude")
+    case_sensitivity_valid = (case_sensitivity == "case sensitive" or case_sensitivity == "not case sensitive")
+
+    #ensuring that the correct database columns are referenced
+    term_columns_valid = True
+    for key in filter_term_dictionary:
+        if not (key in DATABASE_INFORMATION["database_columns"]):
+            term_columns_valid = False
+
+    # catches early errors like incorrectly formatted conditions
+    if filter_condition_valid and case_sensitivity_valid and term_columns_valid:
+
+        # calling the function that actually does the filtering
+        results = tt.filter(filter_term_dictionary, filter_condition,case_sensitivity)
+
+        if results == "error":
+            return jsonify({"ERROR" : "Failed call"})
+        else:
+            return jsonify(results)
+        
+    else:
+        return jsonify({"ERROR" : "Failed filter call", 
+                        "FILTER CONDITION VALID" : filter_condition_valid, 
+                        "CASE SENSITIVITY VALID" : case_sensitivity_valid,
+                        "TERM COLUMNS VALID" : term_columns_valid,
+                        "---" : "please reference the relevant documentation on filter for more information"})
 
 
 
@@ -73,7 +121,7 @@ def metric_per_category(metric, category):
             return jsonify(results)
     
     else:
-        return jsonify({"ERROR" : "Failed call, please ensure that metric is 'species' or 'sightings', and that the category is 'region' or 'species'. -- Please note: metric = 'species', category = 'species' together is not allowed. There is 1 species per species."})
+        return jsonify({"ERROR" : "Failed call"})
 
 # calculates the metric over time
 @app.route("/aggregate_metric_over_time/<metric>/<time>")
@@ -103,5 +151,6 @@ def command_database(command):
 
 
 
-if __name__ == "__main__":  
+if __name__ == "__main__":
+    print(DATABASE_INFORMATION)
     app.run(debug = True)

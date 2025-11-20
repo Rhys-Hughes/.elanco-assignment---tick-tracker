@@ -1,0 +1,10 @@
+{
+    "database_columns" : [
+        "id",
+        "date",
+        "time",
+        "location",
+        "species",
+        "latin_name"
+    ]
+}

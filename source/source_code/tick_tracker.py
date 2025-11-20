@@ -6,10 +6,17 @@ def tt_connect_to_database():
     connection, cursor = dbm.connect_to_database()
     return connection, cursor
 
+def tt_get_database_information():
+    columns = dbm.get_database_information()
+    return columns
 
+
+# ========================================================================================================
+#                                               SQL GENERATION
+# ========================================================================================================
 
 # checks the case sensitivity and sets the case_sensitivity_mark
-def case_sensitivity_check(search_term_dictionary, case_sensitivity):
+def case_sensitivity_check(case_sensitivity):
 
     # this is the statement which will be inserted into our SQL to make it lower case if need be
     case_sensitivity_mark = ""
@@ -20,41 +27,58 @@ def case_sensitivity_check(search_term_dictionary, case_sensitivity):
     if case_sensitivity == "not case sensitive":
         case_sensitivity_mark = "LOWER"
 
-        # going through the search term dictionary and making everything lower case
-        for key, term in search_term_dictionary.items():
-            search_term_dictionary[key] = term.lower()
-
-    return search_term_dictionary, case_sensitivity_mark
-
-
+    return case_sensitivity_mark
 
 # generates a string containing the select criteria of an SQL select statement
-def generate_SELECT_criteria(term_dictionary, search_condition, case_sensitivity_mark):
-    # what we will store unformatted criteria in
-    criteria_list = []
+def generate_SELECT_criteria(term_dictionary, select_condition, case_sensitivity_mark, equals_sign):
+    try:
+        # what we will store unformatted criteria in
+        criteria_list = []
+        argument_list = []
 
-    # each search term will be accounted for
-    for key, term in term_dictionary.items():
+        # each search term will be accounted for
+        for key, term in term_dictionary.items():
 
-        # this will generate a chunk of the SQL syntax, it could look something like:
-        # "LOWER(`location`) = LOWER('Liverpool')", or "(`location`) = ('Liverpool')" if there is case sensitivity
-        criteria_list.append(f"{case_sensitivity_mark}(`?`) = {case_sensitivity_mark}('?')")
+            # this will generate a chunk of the SQL syntax, it could look something like:
+            # "LOWER(`location`) = LOWER('Liverpool')", or "(`location`) = ('Liverpool')" if there is case sensitivity
+            # the ? symbol is for parametarised input, they are used to prevent SQL injection
+            try:
+                #if the term is not a list
+                if type(term) == list:
+                    for item in term:
+                        criteria_list.append(f"{case_sensitivity_mark}(`{key}`) {equals_sign} {case_sensitivity_mark}(?)")
+                        # this is used to pass the arguments to the command execute
+                        argument_list.append(item)
+                else:
+                    criteria_list.append(f"{case_sensitivity_mark}(`{key}`) {equals_sign} {case_sensitivity_mark}(?)")
+                    # this is used to pass the arguments to the command execute
+                    argument_list.append(term)       
 
-    # now we stitch together the individual criteria using the search_condition (and/or)
-    search_condition = search_condition.upper() # <-- this is mostly for formatting since SQL should be upper case
+            except Exception as e:
+                print(e)
 
-    # to store our final output, starts with a space
-    criteria_string = " "
-    for i in range(len(criteria_list)):
-        # if not the final criteria, a the search condition "and" or "or" will be appended
-        if i != len(criteria_list) - 1:
-            criteria_string += f"{criteria_list[i]} {search_condition} "
-        
-        # if it is teh final criteria, no search condition will be appended
-        else:
-            criteria_string += f"{criteria_list[i]} "
-        
-    return criteria_string
+
+        # now we stitch together the individual criteria using the search_condition (and/or)
+        select_condition = select_condition.upper() # <-- this is mostly for formatting since SQL should be upper case
+
+
+        # to store our final output, starts with a space
+        criteria_string = " "
+        for i in range(len(criteria_list)):
+
+            # if not the final criteria, a the search condition "and" or "or" will be appended
+            if i != len(criteria_list) - 1:
+                criteria_string += f"{criteria_list[i]} {select_condition} "
+            
+
+            # if it is teh final criteria, no search condition will be appended
+            else:
+                criteria_string += f"{criteria_list[i]} "
+            
+
+        return criteria_string, argument_list
+    except Exception as e:
+        print(e)
 
 
 
@@ -62,40 +86,32 @@ def generate_SELECT_criteria(term_dictionary, search_condition, case_sensitivity
 #                                               SEARCH
 # ========================================================================================================
 
-# search_term_dictionary : a dictionary pairing a data field with its desired value, eg {"location" : "Liverpool", "species" : "Marsh tick"}
-# case_sensitivity : either "case sensitive" or "not case sensitive", used to set the case_sensitivity_mark
-                    # case_sensitivity_mark : either "LOWER" or "", inserted into SQL to force it to ignore cases or not by either making everything
-                    #                         lower case, or leaving everything as it is
-# search condition : the condition that determines the relationship between the search terms, "and" or "or", for example, location = "Liverpool" AND species = "marsh tick"
-
 # search the data set for time range and location, adding species too
 def search(search_term_dictionary, search_condition, case_sensitivity):
     connection, cursor = tt_connect_to_database()
 
     try:
         # getting the search_term_dictionary into dictionary form
+        # 
+        #   THIS IS NOT GREAT PRACTICE, CHANGING TO JSON WOULD BE BETTER
+        #
         search_term_dictionary = ast.literal_eval(search_term_dictionary)
 
         # creating the prerequisites to any case sensitivity enforcement
-        search_term_dictionary, case_sensitivity_mark = case_sensitivity_check(search_term_dictionary, case_sensitivity)
+        case_sensitivity_mark = case_sensitivity_check(case_sensitivity)
 
         # generates a string which will indicate our criteria in the system
-        select_criteria = generate_SELECT_criteria(search_term_dictionary, search_condition, case_sensitivity_mark)
+        select_criteria, argument_list = generate_SELECT_criteria(search_term_dictionary, search_condition, case_sensitivity_mark, "=")
 
-        command = f"""
-                    SELECT * FROM `sightings` WHERE {select_criteria}; 
-                   """
+        command = f"SELECT * FROM `sightings` WHERE {select_criteria};"
 
-        results = dbm.command_database(cursor, command)
-
-        print(command)
+        results = dbm.command_database(cursor, command, argument_list)
 
         return results
 
     except Exception as e:
         # a more accurate error message will be given by the flask_server
         return "error"
-
 
 
 
@@ -106,6 +122,33 @@ def search(search_term_dictionary, search_condition, case_sensitivity):
 # filter out or filter in specific ranges of data, eg locations, times, etc
 def filter(filter_term_dictionary, filter_condition, case_sensitivity):
     connection, cursor = tt_connect_to_database()
+    try:
+        # getting the search_term_dictionary into dictionary form
+        # 
+        #   THIS IS NOT GREAT PRACTICE, CHANGING TO JSON WOULD BE BETTER
+        #
+        filter_term_dictionary = ast.literal_eval(filter_term_dictionary)
+
+        # creating the prerequisites to any case sensitivity enforcement
+        case_sensitivity_mark = case_sensitivity_check(case_sensitivity)
+
+        if filter_condition == "include":
+            equals_sign = "="
+        elif filter_condition == "exclude":
+            equals_sign = "!="
+
+        # generates a string which will indicate our criteria in the system               # AND becuase it ensures all filter rules are applied
+        select_criteria, argument_list = generate_SELECT_criteria(filter_term_dictionary, "AND", case_sensitivity_mark, equals_sign)
+
+        command = f"SELECT * FROM `sightings` WHERE {select_criteria};"
+
+        results = dbm.command_database(cursor, command, argument_list)
+
+        return results
+
+    except Exception as e:
+        # a more accurate error message will be given by the flask_server
+        return "error"
 
 
 
