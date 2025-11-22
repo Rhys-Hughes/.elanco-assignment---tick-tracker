@@ -34,6 +34,7 @@ def generate_SELECT_criteria(term_dictionary, select_condition, case_sensitivity
     try:
         # what we will store unformatted criteria in
         criteria_list = []
+        # argument list is used to pass the arguments to the command execute
         argument_list = []
 
         # each search term will be accounted for
@@ -62,8 +63,8 @@ def generate_SELECT_criteria(term_dictionary, select_condition, case_sensitivity
         select_condition = select_condition.upper() # <-- this is mostly for formatting since SQL should be upper case
 
 
-        # to store our final output, starts with a space
-        criteria_string = " "
+        # to store our final output
+        criteria_string = ""
         for i in range(len(criteria_list)):
 
             # if not the final criteria, a the search condition "and" or "or" will be appended
@@ -80,12 +81,86 @@ def generate_SELECT_criteria(term_dictionary, select_condition, case_sensitivity
     except Exception as e:
         print(e)
 
+# generates a string containing the select criteria of an SQL select statement
+def generate_TIME_criteria(time_span_dictionary, filter_condition):
+    try:
+        # what we will store unformatted criteria in
+        criteria_list = []
+        # argument list is used to pass the arguments to the command execute
+        argument_list = []
+
+        #we use this to determine what date restriction we want including
+        key_list = []
+        for key, term in time_span_dictionary.items():
+            key_list.append(key)
+
+        # each search term will be accounted for
+        #for key, term in time_span_dictionary.items():
+
+            # ensuring that the filter condition properly translates
+        if filter_condition == "exclude":
+            filter_condition_symbol = "NOT"
+        else:
+            filter_condition_symbol = ""
+
+
+        try:
+            date_min_and_max = ("date_min" in key_list) and ("date_max" in key_list)
+            time_min_and_max = ("time_min" in key_list) and ("time_max" in key_list)
+
+            if date_min_and_max: 
+                criteria_list.append(f"{filter_condition_symbol} (`date`) BETWEEN ? and ?")
+                argument_list.append(time_span_dictionary["date_min"])
+                argument_list.append(time_span_dictionary["date_max"])
+
+            if time_min_and_max: 
+                criteria_list.append(f"{filter_condition_symbol} (`time`) BETWEEN ? and ?")
+                argument_list.append(time_span_dictionary["time_min"])
+                argument_list.append(time_span_dictionary["time_max"])
+
+            if not (date_min_and_max or time_min_and_max):
+                if "date_min" in key_list:
+                    criteria_list.append(f"{filter_condition_symbol} (`date`) >= (?)")
+                    argument_list.append(time_span_dictionary["date_min"])
+
+                if "date_max" in key_list:
+                    criteria_list.append(f"{filter_condition_symbol} (`date`) <= (?)")
+                    argument_list.append(time_span_dictionary["date_max"])
+
+                if "time_min" in key_list:
+                    criteria_list.append(f"{filter_condition_symbol} (`time`) >= (?)")
+                    argument_list.append(time_span_dictionary["time_min"])
+
+                if "time_max" in key_list:
+                    criteria_list.append(f"{filter_condition_symbol} (`time`) <= (?)")
+                    argument_list.append(time_span_dictionary["time_max"])   
+
+        except Exception as e:
+            print(e)
+ 
+        # to store our final output
+        criteria_string = ""
+        for i in range(len(criteria_list)):
+
+            # if not the final criteria, a the search condition "and" or "or" will be appended
+            if i != len(criteria_list) - 1:
+                criteria_string += f"{criteria_list[i]} AND "
+            
+
+            # if it is the final criteria, no search condition will be appended
+            else:
+                criteria_string += f"{criteria_list[i]} "
+            
+
+        return criteria_string, argument_list
+    except Exception as e:
+        print(e)
+
 
 
 # ========================================================================================================
 #                                               SEARCH
 # ========================================================================================================
-
 # search the data set for time range and location, adding species too
 def search(search_term_dictionary, search_condition, case_sensitivity):
     connection, cursor = tt_connect_to_database()
@@ -113,9 +188,8 @@ def search(search_term_dictionary, search_condition, case_sensitivity):
 # ========================================================================================================
 #                                               FILTER
 # ========================================================================================================
-
 # filter out or filter in specific ranges of data, eg locations, times, etc
-def filter(filter_term_dictionary, filter_condition, case_sensitivity):
+def filter(filter_term_dictionary, filter_condition, case_sensitivity, time_span_dictionary):
     connection, cursor = tt_connect_to_database()
     try:
 
@@ -129,8 +203,12 @@ def filter(filter_term_dictionary, filter_condition, case_sensitivity):
 
         # generates a string which will indicate our criteria in the system               # AND becuase it ensures all filter rules are applied
         select_criteria, argument_list = generate_SELECT_criteria(filter_term_dictionary, "AND", case_sensitivity_mark, equals_sign)
+        time_criteria, time_argument_list = generate_TIME_criteria(time_span_dictionary, filter_condition)
 
-        command = f"SELECT * FROM `sightings` WHERE {select_criteria};"
+        # so that all of the arguments are included
+        argument_list.extend(time_argument_list)
+
+        command = f"SELECT * FROM `sightings` WHERE {select_criteria} AND {time_criteria};"
 
         results = dbm.command_database(cursor, command, argument_list)
 
@@ -138,6 +216,7 @@ def filter(filter_term_dictionary, filter_condition, case_sensitivity):
 
     except Exception as e:
         # a more accurate error message will be given by the flask_server
+        print(e)
         return "error"
 
 
@@ -145,7 +224,6 @@ def filter(filter_term_dictionary, filter_condition, case_sensitivity):
 # ========================================================================================================
 #                                            AGGREGATION
 # ========================================================================================================
-# category is a dictionary formatted as {group : data}, for example, {"location" : "manchester"}
 
 # the returns a list of species
 def species_per_location(location):
@@ -195,8 +273,14 @@ def sightings_per_species(species):
 
 
 
-# calculates the metric over time
-def metric_over_time(metric, time):
+# calculates the metric over time, returns an array of sightings
+def species_over_time(time):
+    connection, cursor = tt_connect_to_database()
+
+def sightings_over_time(time):
+    connection, cursor = tt_connect_to_database()
+
+def location_over_time(time):
     connection, cursor = tt_connect_to_database()
 
 
@@ -206,20 +290,5 @@ def metric_per_category_over_time(metric, category, time):
     connection, cursor = tt_connect_to_database()
 
 
-
-# directly queries the database
-def command_database(command):
-    connection, cursor = tt_connect_to_database()   
-    results = dbm.command_database(cursor, command)
-    return results 
-
-
-# connection testing
-def connection_test(test_var):
-    connection, cursor = tt_connect_to_database()
-    return {
-        "database_contents" : cursor,
-        "test_variable" : test_var
-    }
 
 

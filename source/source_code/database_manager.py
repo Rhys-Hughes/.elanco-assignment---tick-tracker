@@ -71,6 +71,8 @@ def commit_database(connection):
 # generic query function
 def command_database(cursor, command, arguments = None):
     try:
+        print(command, arguments)
+
         #inserts data into the arguments placeholders
         if arguments != None:
             cursor.execute(command, arguments)
