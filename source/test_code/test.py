@@ -11,14 +11,22 @@ def filter_test():
         "time_span_dictionary" : {"date_min" : "2019.01.01", "date_max" : "2019.12.31",
                                   "time_min" : "00.00.00", "time_max" : "05.00.00"}
     }
+    payload_json = {
+        "filter_term_dictionary" : {},
+        "filter_condition" : "exclude",
+        "case_sensitivity" : "case sensitive",
+        "time_span_dictionary" : {}
+    }
 
     response = requests.post(f"{URL}/filter", json = payload_json)
     response_json = response.json()
 
-    for r in response_json["results"]:
-        print(r)
+    if response.json()["success"] == "true":
+        for r in response_json["results"]:
+            print(r)
 
-    #print(response.json())
+    else:
+        print(print(response.json()))
 
 def search_test():
     payload_json = {
@@ -26,14 +34,21 @@ def search_test():
         "search_condition" : "and",
         "case_sensitivity" : "case sensitive"
     }
+    payload_json = {
+        "search_term_dictionary" : {},
+        "search_condition" : "and",
+        "case_sensitivity" : "case sensitive"
+    }
 
     response = requests.post(f"{URL}/search", json = payload_json)
     response_json = response.json()
 
-    for r in response_json["results"]:
-        print(r)
+    if response.json()["success"] == "true":
+        for r in response_json["results"]:
+            print(r)
 
-    #print(response.json())
+    else:
+        print(print(response.json()))
 
 def x_per_y_tests():
     payload_json_location = {
@@ -50,6 +65,6 @@ def x_per_y_tests():
     response = requests.post(f"{URL}/sightings_per_species", json = payload_json_species)
     print(response.json())      
 
-#filter_test()
-#search_test()
-x_per_y_tests()
+filter_test()
+search_test()
+#x_per_y_tests()

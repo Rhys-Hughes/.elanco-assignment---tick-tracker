@@ -38,7 +38,10 @@ def search():
     case_sensitivity_valid = (case_sensitivity == "case sensitive" or case_sensitivity == "not case sensitive")
 
     #ensuring that the correct database columns are referenced
-    term_columns_valid = is_key_in_json(search_term_dictionary, DATABASE_INFORMATION["database_columns"])
+    if search_term_dictionary != {}:
+        term_columns_valid = is_key_in_json(search_term_dictionary, DATABASE_INFORMATION["database_columns"])
+    else:
+        return jsonify({"success" : "false", "ERROR" : "search _term_dictionary is empty, please add values in order to search"})
  
     # catches early errors like incorrectly formatted conditions and columns
     if search_condition_valid and case_sensitivity_valid and term_columns_valid:
@@ -47,12 +50,12 @@ def search():
         results = tt.search(search_term_dictionary, search_condition, case_sensitivity)
 
         if results == "error":
-            return jsonify({"ERROR" : "Failed call"})
+            return jsonify({"success" : "false", "ERROR" : "Failed call"})
         else:
-            return jsonify({"results" : results})
+            return jsonify({"success" : "true", "results" : results})
         
     else:
-        return jsonify({"ERROR" : "Failed search call", 
+        return jsonify({"success" : "false", "ERROR" : "Failed search call", 
                         "SEARCH CONDITION VALID" : search_condition_valid, 
                         "CASE SENSITIVITY VALID" : case_sensitivity_valid,
                         "TERM COLUMNS VALID" : term_columns_valid,
@@ -84,11 +87,19 @@ def filter():
     case_sensitivity_valid = (case_sensitivity == "case sensitive" or case_sensitivity == "not case sensitive")
 
     #ensuring that the correct database columns are referenced
-    term_columns_valid = is_key_in_json(filter_term_dictionary, DATABASE_INFORMATION["database_columns"])
+    if filter_term_dictionary != {}:
+        term_columns_valid = is_key_in_json(filter_term_dictionary, DATABASE_INFORMATION["database_columns"])
+    else:
+        term_columns_valid = True
 
     #ensuring that the correct time spans are used
-    time_span_valid = is_key_in_json(time_span_dictionary, ["date_min", "date_max", "time_min", "time_max"])
+    if time_span_dictionary != {}:
+        time_span_valid = is_key_in_json(time_span_dictionary, ["date_min", "date_max", "time_min", "time_max"])
+    else:
+        time_span_valid = True
 
+    if filter_term_dictionary == {} and time_span_dictionary == {}:
+        return jsonify({"success" : "false", "ERROR" : "Both filter_term_dictionary and time_span_dictionary are empty, please add values in order to filter"})
 
     # catches early errors like incorrectly formatted conditions
     if filter_condition_valid and case_sensitivity_valid and term_columns_valid and time_span_valid:
@@ -97,16 +108,16 @@ def filter():
         results = tt.filter(filter_term_dictionary, filter_condition, case_sensitivity, time_span_dictionary)
 
         if results == "error":
-            return jsonify({"ERROR" : "Failed call"})
+            return jsonify({"success" : "false", "ERROR" : "Failed call"})
         else:
-            return jsonify({"results" : results})
+            return jsonify({"success" : "true", "results" : results})
         
     else:
-        return jsonify({"ERROR" : "Failed filter call", 
+        return jsonify({"success" : "false", "ERROR" : "Failed filter call", 
                         "FILTER CONDITION VALID" : filter_condition_valid, 
                         "CASE SENSITIVITY VALID" : case_sensitivity_valid,
                         "TERM COLUMNS VALID" : term_columns_valid,
-                        "TIME SPAN ENTRIES VALID" : time_span_valid,
+                        "TIME SPANS VALID" : time_span_valid,
                         "---" : "please reference the relevant documentation on filter for more information"})
 
 
@@ -122,36 +133,50 @@ def filter():
 def species_per_location():
     data = request.get_json()
 
+    # if the key provided is correct the call proceeds
     if is_key_in_json(data, ["location"]):
         location = data["location"]
+
         results = tt.species_per_location(location)
-        return jsonify(results)
+        return jsonify({"success" : "true", "results" : results})
+    
     else:
-        return jsonify({"ERROR" : "unrecognised json key, please ensure the only key is 'location'"})
+        return jsonify({"success" : "false", "ERROR" : "unrecognised json key, please ensure the only key is 'location'"})
 
 #returns an int of how many sightings there are per location
 @app.route("/sightings_per_location", methods = ["POST"])
 def sightings_per_location():
     data = request.get_json()
 
+    # if the key provided is correct the call proceeds
     if is_key_in_json(data, ["location"]):
         location = data["location"]
+
         results = tt.sightings_per_location(location)
-        return jsonify(results)
+        return jsonify({"success" : "true", "results" : results})
+    
     else:
-        return jsonify({"ERROR" : "unrecognised json key, please ensure the only key is 'location'"})
+        return jsonify({"success" : "false", "ERROR" : "unrecognised json key, please ensure the only key is 'location'"})
 
 #returns an int of how many sightings there are per species
 @app.route("/sightings_per_species", methods = ["POST"])
 def sightings_per_species():
     data = request.get_json()
 
+    # if the key provided is correct the call proceeds
     if is_key_in_json(data, ["species"]):
         species = data["species"]
+
         results = tt.sightings_per_species(species)
-        return jsonify(results)
+        return jsonify({"success" : "true", "results" : results})
+    
     else:
-        return jsonify({"ERROR" : "unrecognised json key, please ensure the only key is 'species'"})
+        return jsonify({"success" : "false", "ERROR" : "unrecognised json key, please ensure the only key is 'species'"})
+
+
+
+
+
 
 
 

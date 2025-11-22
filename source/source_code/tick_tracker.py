@@ -82,7 +82,7 @@ def generate_SELECT_criteria(term_dictionary, select_condition, case_sensitivity
         print(e)
 
 # generates a string containing the select criteria of an SQL select statement
-def generate_TIME_criteria(time_span_dictionary, filter_condition):
+def generate_TIME_criteria(time_span_dictionary, filter_condition_symbol):
     try:
         # what we will store unformatted criteria in
         criteria_list = []
@@ -94,16 +94,9 @@ def generate_TIME_criteria(time_span_dictionary, filter_condition):
         for key, term in time_span_dictionary.items():
             key_list.append(key)
 
-        # each search term will be accounted for
-        #for key, term in time_span_dictionary.items():
-
-            # ensuring that the filter condition properly translates
-        if filter_condition == "exclude":
-            filter_condition_symbol = "NOT"
-        else:
-            filter_condition_symbol = ""
-
-
+        # this code is responsible for designating the minimum and maximum time allowences.
+        # it accounts for if there is only one of the conditions for date and time respectively, and if there are both
+        # if there is ony one condition we use a standard <= or >=, however if both are present we must use BETWEEN 
         try:
             date_min_and_max = ("date_min" in key_list) and ("date_max" in key_list)
             time_min_and_max = ("time_min" in key_list) and ("time_max" in key_list)
@@ -144,7 +137,7 @@ def generate_TIME_criteria(time_span_dictionary, filter_condition):
 
             # if not the final criteria, a the search condition "and" or "or" will be appended
             if i != len(criteria_list) - 1:
-                criteria_string += f"{criteria_list[i]} AND "
+                criteria_string += f"{criteria_list[i]} AND"
             
 
             # if it is the final criteria, no search condition will be appended
@@ -198,17 +191,38 @@ def filter(filter_term_dictionary, filter_condition, case_sensitivity, time_span
 
         if filter_condition == "include":
             equals_sign = "="
+            filter_condition_symbol = "NOT"
         elif filter_condition == "exclude":
             equals_sign = "!="
+            filter_condition_symbol = ""
 
-        # generates a string which will indicate our criteria in the system               # AND becuase it ensures all filter rules are applied
-        select_criteria, argument_list = generate_SELECT_criteria(filter_term_dictionary, "AND", case_sensitivity_mark, equals_sign)
-        time_criteria, time_argument_list = generate_TIME_criteria(time_span_dictionary, filter_condition)
+        # generates a string which will indicate our criteria in the system
+
+        # Note : validation in the flask server makes it (probably) impossible to have both of these conditions be empty
+
+        # if empty, it is ignored by the system
+        if filter_term_dictionary != {}:                                                      # AND becuase it ensures all filter rules are applied
+            select_criteria, argument_list = generate_SELECT_criteria(filter_term_dictionary, "AND", case_sensitivity_mark, equals_sign)
+        else:
+            select_criteria = ""
+            argument_list = []
+
+        # if empty it is ignored by the system
+        if time_span_dictionary != {}:
+            time_criteria, time_argument_list = generate_TIME_criteria(time_span_dictionary, filter_condition_symbol)
+        else:
+            time_criteria = ""
+            time_argument_list = []
 
         # so that all of the arguments are included
         argument_list.extend(time_argument_list)
 
-        command = f"SELECT * FROM `sightings` WHERE {select_criteria} AND {time_criteria};"
+        if filter_term_dictionary == {}:
+            command = f"SELECT * FROM `sightings` WHERE {time_criteria};"
+        elif time_span_dictionary == {}:
+            command = f"SELECT * FROM `sightings` WHERE {select_criteria};"
+        else:
+            command = f"SELECT * FROM `sightings` WHERE {select_criteria} AND {time_criteria};"
 
         results = dbm.command_database(cursor, command, argument_list)
 
@@ -242,7 +256,7 @@ def species_per_location(location):
         if species[0] not in species_list_unique:
             species_list_unique.append(species[0])
 
-    return {"species" : species_list_unique}
+    return species_list_unique
 
 # counts the sightings for a given location
 def sightings_per_location(location):
@@ -255,7 +269,7 @@ def sightings_per_location(location):
     
     number_of_sightings = len(sightings)
 
-    return {"number_of_sightings" : number_of_sightings}
+    return number_of_sightings
 
 # the same as sightings_per_location however selecting for species instead of location
 def sightings_per_species(species):
@@ -268,7 +282,7 @@ def sightings_per_species(species):
     
     number_of_sightings = len(sightings) 
 
-    return {"number_of_sightings" : number_of_sightings}
+    return number_of_sightings
 
 
 
