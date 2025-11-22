@@ -1,7 +1,8 @@
-import sqlite3, pandas, openpyxl
+import sqlite3, pandas, openpyxl, json
 
 DATABASE_PATH = "source/database/tick_sightings.db"
 SOURCE_DATA_PATH = "source/source_data/Tick Sightings.xlsx"
+DATABASE_INFORMATION_PATH = "source/database/database_information.json"
 
 
 # handles connecting to the database
@@ -70,6 +71,8 @@ def commit_database(connection):
 # generic query function
 def command_database(cursor, command, arguments = None):
     try:
+        print(command, arguments)
+
         #inserts data into the arguments placeholders
         if arguments != None:
             cursor.execute(command, arguments)
@@ -77,7 +80,8 @@ def command_database(cursor, command, arguments = None):
             cursor.execute(command)
 
         return cursor.fetchall()           
-    except:
+    except Exception as e:
+        print(e)
         return "!!! - COMMAND FAILED - !!!"
 
 
@@ -112,10 +116,13 @@ def connect_to_database():
 
 
 
-# returns the entire database as sighting objects
-def get_database_as_sighting_objects(cursor):
-    results = command_database(cursor, "SELECT * FROM `sightings`;")
-    print(results)
+# returns the list of columns in the database
+def get_database_information():
+    with open(DATABASE_INFORMATION_PATH, "r") as f:
+        database_information = json.load(f)
+    
+    return database_information
+
 
 
 
