@@ -91,11 +91,6 @@ def search(search_term_dictionary, search_condition, case_sensitivity):
     connection, cursor = tt_connect_to_database()
 
     try:
-        # getting the search_term_dictionary into dictionary form
-        # 
-        #   THIS IS NOT GREAT PRACTICE, CHANGING TO JSON WOULD BE BETTER
-        #
-        search_term_dictionary = ast.literal_eval(search_term_dictionary)
 
         # creating the prerequisites to any case sensitivity enforcement
         case_sensitivity_mark = case_sensitivity_check(case_sensitivity)
@@ -123,11 +118,6 @@ def search(search_term_dictionary, search_condition, case_sensitivity):
 def filter(filter_term_dictionary, filter_condition, case_sensitivity):
     connection, cursor = tt_connect_to_database()
     try:
-        # getting the search_term_dictionary into dictionary form
-        # 
-        #   THIS IS NOT GREAT PRACTICE, CHANGING TO JSON WOULD BE BETTER
-        #
-        filter_term_dictionary = ast.literal_eval(filter_term_dictionary)
 
         # creating the prerequisites to any case sensitivity enforcement
         case_sensitivity_mark = case_sensitivity_check(case_sensitivity)
@@ -157,10 +147,51 @@ def filter(filter_term_dictionary, filter_condition, case_sensitivity):
 # ========================================================================================================
 # category is a dictionary formatted as {group : data}, for example, {"location" : "manchester"}
 
-
-# calculates the metric per category
-def metric_per_category(metric, category):
+# the returns a list of species
+def species_per_location(location):
     connection, cursor = tt_connect_to_database()
+    arguments = [location]
+
+    # runs the following select statement, inserting the location
+    command = "SELECT `species` FROM `sightings` WHERE `location` = (?)"
+    species_list = dbm.command_database(cursor, command, arguments)
+
+    # removing the duplicate values 
+    species_list_unique = []
+    for species in species_list:
+
+        # we do species[0] because it the select statement returns a list with 1 item
+        if species[0] not in species_list_unique:
+            species_list_unique.append(species[0])
+
+    return {"species" : species_list_unique}
+
+# counts the sightings for a given location
+def sightings_per_location(location):
+    connection, cursor = tt_connect_to_database()
+    arguments = [location]
+
+    # runs the following select statement, inserting the location
+    command = "SELECT `id` FROM `sightings` WHERE `location` = (?)"
+    sightings = dbm.command_database(cursor, command, arguments)
+    
+    number_of_sightings = len(sightings)
+
+    return {"number_of_sightings" : number_of_sightings}
+
+# the same as sightings_per_location however selecting for species instead of location
+def sightings_per_species(species):
+    connection, cursor = tt_connect_to_database()
+    arguments = [species]
+
+    # runs the following select statement, inserting the species
+    command = "SELECT `id` FROM `sightings` WHERE `species` = (?)"
+    sightings = dbm.command_database(cursor, command, arguments)
+    
+    number_of_sightings = len(sightings) 
+
+    return {"number_of_sightings" : number_of_sightings}
+
 
 
 
