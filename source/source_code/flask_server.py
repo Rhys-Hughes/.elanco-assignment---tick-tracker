@@ -37,12 +37,15 @@ def search():
     search_condition_valid = (search_condition == "or" or search_condition == "and")
     case_sensitivity_valid = (case_sensitivity == "case sensitive" or case_sensitivity == "not case sensitive")
 
+
     #ensuring that the correct database columns are referenced
     if search_term_dictionary != {}:
         term_columns_valid = is_key_in_json(search_term_dictionary, DATABASE_INFORMATION["database_columns"])
     else:
-        return jsonify({"success" : "false", "ERROR" : "search _term_dictionary is empty, please add values in order to search"})
+        return jsonify({"success" : "false", 
+                        "error" : "search _term_dictionary is empty, please add values in order to search"})
  
+
     # catches early errors like incorrectly formatted conditions and columns
     if search_condition_valid and case_sensitivity_valid and term_columns_valid:
 
@@ -50,15 +53,18 @@ def search():
         results = tt.search(search_term_dictionary, search_condition, case_sensitivity)
 
         if results == "error":
-            return jsonify({"success" : "false", "ERROR" : "Failed call"})
+            return jsonify({"success" : "false", 
+                            "error" : "Failed call"})
         else:
-            return jsonify({"success" : "true", "results" : results})
-        
+            return jsonify({"success" : "true", 
+                            "result" : results})
+         
     else:
-        return jsonify({"success" : "false", "ERROR" : "Failed search call", 
-                        "SEARCH CONDITION VALID" : search_condition_valid, 
-                        "CASE SENSITIVITY VALID" : case_sensitivity_valid,
-                        "TERM COLUMNS VALID" : term_columns_valid,
+        return jsonify({"success" : "false", 
+                        "error" : "Failed search call", 
+                        "search_condition valid" : search_condition_valid, 
+                        "case_sensitivity valid" : case_sensitivity_valid,
+                        "search_term_dictionary valid" : term_columns_valid,
                         "---" : "please reference the relevant documentation on search for more information"})
 
 
@@ -72,7 +78,6 @@ def search():
 #   - time_span_dictionary   : dictionary : {"date_from" : "yyyy.mm.dd", "date_to" : "yyyy.mm.dd", "time_from" : "hh.mm.ss", "time_to" : "hh.mm.ss"} -> defines a time span that the filter must be within
 #
 # -- FURTHER INFORMATION IN THE DOCUMENTATION FILE --
-
 @app.route("/filter", methods = ["POST"])
 def filter():
 
@@ -82,24 +87,30 @@ def filter():
     case_sensitivity = data["case_sensitivity"] 
     time_span_dictionary = data["time_span_dictionary"]
 
-    #validation checking
+    # validation checking
     filter_condition_valid = (filter_condition == "include" or filter_condition == "exclude")
     case_sensitivity_valid = (case_sensitivity == "case sensitive" or case_sensitivity == "not case sensitive")
 
-    #ensuring that the correct database columns are referenced
+
+    # ensuring that the correct database columns are referenced
     if filter_term_dictionary != {}:
         term_columns_valid = is_key_in_json(filter_term_dictionary, DATABASE_INFORMATION["database_columns"])
     else:
         term_columns_valid = True
 
-    #ensuring that the correct time spans are used
+
+    # ensuring that the correct time spans are used
     if time_span_dictionary != {}:
         time_span_valid = is_key_in_json(time_span_dictionary, ["date_min", "date_max", "time_min", "time_max"])
     else:
         time_span_valid = True
 
+
+    # ensures that both the input dictionaries have at least something in them
     if filter_term_dictionary == {} and time_span_dictionary == {}:
-        return jsonify({"success" : "false", "ERROR" : "Both filter_term_dictionary and time_span_dictionary are empty, please add values in order to filter"})
+        return jsonify({"success" : "false", 
+                        "error" : "Both filter_term_dictionary and time_span_dictionary are empty, please add values in order to filter"})
+
 
     # catches early errors like incorrectly formatted conditions
     if filter_condition_valid and case_sensitivity_valid and term_columns_valid and time_span_valid:
@@ -108,16 +119,19 @@ def filter():
         results = tt.filter(filter_term_dictionary, filter_condition, case_sensitivity, time_span_dictionary)
 
         if results == "error":
-            return jsonify({"success" : "false", "ERROR" : "Failed call"})
+            return jsonify({"success" : "false", 
+                            "error" : "Failed call"})
         else:
-            return jsonify({"success" : "true", "results" : results})
+            return jsonify({"success" : "true", 
+                            "result" : results})
         
     else:
-        return jsonify({"success" : "false", "ERROR" : "Failed filter call", 
-                        "FILTER CONDITION VALID" : filter_condition_valid, 
-                        "CASE SENSITIVITY VALID" : case_sensitivity_valid,
-                        "TERM COLUMNS VALID" : term_columns_valid,
-                        "TIME SPANS VALID" : time_span_valid,
+        return jsonify({"success" : "false", 
+                        "error" : "Failed filter call", 
+                        "filter_condition valid" : filter_condition_valid, 
+                        "case_sensitivity valid" : case_sensitivity_valid,
+                        "filter_term_dictionary" : term_columns_valid,
+                        "time_span_dictionary" : time_span_valid,
                         "---" : "please reference the relevant documentation on filter for more information"})
 
 
@@ -138,10 +152,12 @@ def species_per_location():
         location = data["location"]
 
         results = tt.species_per_location(location)
-        return jsonify({"success" : "true", "results" : results})
+        return jsonify({"success" : "true", 
+                        "result" : results})
     
     else:
-        return jsonify({"success" : "false", "ERROR" : "unrecognised json key, please ensure the only key is 'location'"})
+        return jsonify({"success" : "false", 
+                        "error" : "unrecognised json key, please ensure the only key is 'location'"})
 
 #returns an int of how many sightings there are per location
 @app.route("/sightings_per_location", methods = ["POST"])
@@ -153,10 +169,12 @@ def sightings_per_location():
         location = data["location"]
 
         results = tt.sightings_per_location(location)
-        return jsonify({"success" : "true", "results" : results})
+        return jsonify({"success" : "true", 
+                        "result" : results})
     
     else:
-        return jsonify({"success" : "false", "ERROR" : "unrecognised json key, please ensure the only key is 'location'"})
+        return jsonify({"success" : "false", 
+                        "error" : "unrecognised json key, please ensure the only key is 'location'"})
 
 #returns an int of how many sightings there are per species
 @app.route("/sightings_per_species", methods = ["POST"])
@@ -168,54 +186,94 @@ def sightings_per_species():
         species = data["species"]
 
         results = tt.sightings_per_species(species)
-        return jsonify({"success" : "true", "results" : results})
+        return jsonify({"success" : "true", 
+                        "result" : results})
     
     else:
-        return jsonify({"success" : "false", "ERROR" : "unrecognised json key, please ensure the only key is 'species'"})
-
-
-
-
-
+        return jsonify({"success" : "false", 
+                        "error" : "unrecognised json key, please ensure the only key is 'species'"})
 
 
 
 # - starting from the earliest possible date
-# returns an array of the 
-@app.route("/species_over_time/<time_period>/<start_date>")
-def species_over_time(time_period, start_date):
-    if (time_period == "day") or (time_period == "week") or (time_period == "month") or (time_period == "year"):
-        results = tt.species_over_time(time_period, start_date)
-        return jsonify(results)
+# returns an array containing dictionaries pairing the date seen/started from, and the number of sightings for that species
+@app.route("/species_over_time", methods = ["POST"])
+def species_over_time():
+    data = request.get_json()
+
+    # if the keys provided are correct the call proceeds
+    if is_key_in_json(data, ["time_period", "species", "fill_missing"]):
+        time_period = data["time_period"]
+        species = data["species"]
+        fill_missing = data["fill_missing"]
+
+        # validating the time period
+        if ((time_period == "day") or (time_period == "week") or (time_period == "month") or (time_period == "year")) and ((fill_missing == "fill") or (fill_missing == "no fill")):
+
+            # running the actual function
+            results = tt.species_over_time(time_period, species, fill_missing)
+            return jsonify({"success" : "true",
+                            "result" : results})
+        
+        else:
+            return jsonify({"success" : "false", 
+                            "error" : "Failed species_over_time call, time_period may be incorrect, please enter 'day', 'week', 'month', or 'year', or fill_missing may be incorrect, please enter 'fill' or 'no fill'"})
     else:
-        return jsonify({"ERROR" : "Failed species_over_time call",
-                        "DESCRIPTION" : "time_period is incorrect, please enter 'day', 'week', 'month', or 'year'"})
+        return jsonify({"success" : "false", 
+                        "error" : "Failed species_over_time call, parameters are incorrect, please ensure you have 'time_period', 'species', and 'fill_missing' in your POST Json"})
 
-@app.route("/sightings_over_time/<time_period>/<start_date>")
-def sightings_over_time(time_period, start_date):
-    if (time_period == "day") or (time_period == "week") or (time_period == "month") or (time_period == "year"):
-        results = tt.sightings_over_time(time_period, start_date)
-        return jsonify(results)
+
+# returns an array containing dictionaries pairing the date seen/started from, and the number of sightings in that week
+@app.route("/sightings_over_time", methods = ["POST"])
+def sightings_over_time():
+    data = request.get_json()
+
+    # if the keys provided are correct the call proceeds
+    if is_key_in_json(data, ["time_period", "fill_missing"]):
+        time_period = data["time_period"]
+        fill_missing = data["fill_missing"]
+
+        # validating the time period
+        if ((time_period == "day") or (time_period == "week") or (time_period == "month") or (time_period == "year")) and ((fill_missing == "fill") or (fill_missing == "no fill")):
+
+            # running the actual function
+            results = tt.sightings_over_time(time_period, fill_missing)
+            return jsonify({"success" : "true",
+                            "result" : results})
+        
+        else:
+            return jsonify({"success" : "false", 
+                            "error" : "Failed sightings_over_time call, time_period may be incorrect, please enter 'day', 'week', 'month', or 'year', or fill_missing may be incorrect, please enter 'fill' or 'no fill'"})
     else:
-        return jsonify({"ERROR" : "Failed sightings_over_time call",
-                        "DESCRIPTION" : "time_period is incorrect, please enter 'day', 'week', 'month', or 'year'"})
+        return jsonify({"success" : "false", 
+                        "error" : "Failed sightings_over_time call, parameters are incorrect, please ensure you have 'time_period', 'species', and 'fill_missing' in your POST Json"})
 
-@app.route("/location_over_time/<time_period>/<start_date>")
-def location_over_time(time_period, start_date):
-    if (time_period == "day") or (time_period == "week") or (time_period == "month") or (time_period == "year"):
-        results = tt.location_over_time(time_period, start_date)
-        return jsonify(results)
+
+# returns an array containing dictionaries pairing the date seen/started from, and the number of sightings for that location
+@app.route("/location_over_time", methods = ["POST"])
+def location_over_time():
+    data = request.get_json()
+
+    # if the keys provided are correct the call proceeds
+    if is_key_in_json(data, ["time_period", "location", "fill_missing"]):
+        time_period = data["time_period"]
+        species = data["location"]
+        fill_missing = data["fill_missing"]
+
+        # validating the time period
+        if ((time_period == "day") or (time_period == "week") or (time_period == "month") or (time_period == "year")) and ((fill_missing == "fill") or (fill_missing == "no fill")):
+
+            # running the actual function
+            results = tt.location_over_time(time_period, species, fill_missing)
+            return jsonify({"success" : "true",
+                            "result" : results})
+        
+        else:
+            return jsonify({"success" : "false", 
+                            "error" : "Failed location_over_time call, time_period may be incorrect, please enter 'day', 'week', 'month', or 'year', or fill_missing may be incorrect, please enter 'fill' or 'no fill'"})
     else:
-        return jsonify({"ERROR" : "Failed location_over_time call",
-                        "DESCRIPTION" : "time_period is incorrect, please enter 'day', 'week', 'month', or 'year'"})
-
-
-
-# calculates the metric per category over time
-@app.route("/aggregate_metric_per_category_over_time/<metric>/<category>/<time>")
-def metric_per_category_over_time(metric, category, time):
-    results = tt.metric_per_category_over_time(metric, category, time)
-    return jsonify(results)
+        return jsonify({"success" : "false", 
+                        "error" : "Failed location_over_time call, parameters are incorrect, please ensure you have 'time_period', 'species', and 'fill_missing' in your POST Json"})
 
 
 
