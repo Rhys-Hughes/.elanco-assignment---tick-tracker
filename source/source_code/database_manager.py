@@ -23,8 +23,11 @@ def create_cursor(connection):
 def convert_date_time(date_time):
     date, time = date_time.split("T")
 
-    date = date.replace("-", ".")
-    time = time.replace(":", ".")
+    #date = date.replace("-", ".")
+    #time = time.replace(":", ".")
+
+    date = date.replace("-", "-")
+    time = time.replace(":", "-")
 
     return date, time
 
@@ -88,24 +91,24 @@ def command_database(cursor, command, arguments = None):
 
 # to initially create the sql database we will be working on
 def create_database():
+    # creating the basic sightings table and populating it
     connection = connect_create_database()
     cursor = create_cursor(connection)
     command_database(cursor, 
                      """
-                     CREATE TABLE IF NOT EXISTS`sightings` (
+                     CREATE TABLE IF NOT EXISTS `sightings` (
                         `id` VARCHAR(20) UNIQUE NOT NULL, 
                         `date` DATE NOT NULL, 
                         `time` TIME NOT NULL,
                         `location` VARCHAR(20) NOT NULL,
                         `species` VARCHAR(30) NOT NULL, 
                         `latin_name` VARCHAR(30) NOT NULL,
-                        PRIMARY KEY(id)
+                        PRIMARY KEY(`id`)
                      );
                      """)
     
     populate_database(cursor)
     commit_database(connection)
-
 
 
 # to connect to the ticks database
@@ -125,4 +128,4 @@ def get_database_information():
 
 
 
-
+#create_database()
