@@ -36,6 +36,13 @@ A3- Considering usability and portability, an HTTP interface was the desired cho
 
 I had to learn how to use Flask, as well as SQLite (although I had recently learned some SQL in university), as this was my first API project. 
 
+Dependencies
+------------
+- flask
+- datetime
+- pandas
+- sqlite3
+- openpyxl
 
 Structure
 ---------
