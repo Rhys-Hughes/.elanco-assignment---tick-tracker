@@ -285,7 +285,6 @@ def sightings_per_species(species):
 
     return number_of_sightings
 
-
 # getting the time_period information we need to generate queries
 def get_time_period_information(time_period):
 
@@ -319,7 +318,9 @@ def get_time_period_information(time_period):
 
     return to_select, group_by, order_by, date_range_symbol
 
-
+# calculates every date possible from the first recorded entry, to the current day, and does so in set time intervals
+# then, when the results list does not contain a date that has been listed, it is inserted into the list followed by a 0 to denote that no sightings appeared within that date
+# essentialls fills in the blanks so that graphs can be drawn smoothly
 def fill_dates(date_range_list, results_list):
     results_list_with_missing_dates = []
 
@@ -351,8 +352,8 @@ def fill_dates(date_range_list, results_list):
         
     return results_list_with_missing_dates
 
-
 # function that takes the query results, and ensures that all dates are represented, even if they have no sightings
+# this is mostly the header code that deals in generating a set of dates that should be represented
 def fill_missing_dates(cursor, results_list, date_range_symbol):
     # one issue is that we don't have every date in the returned array, but we may need it, so we have to insert the missing dates
     # first the first/earliest date is taken from the database, and assigned to a datetime object - the datetime module allows us to manipulate dates more easily
@@ -379,9 +380,7 @@ def fill_missing_dates(cursor, results_list, date_range_symbol):
 
     elif date_range_symbol == "W":
         # getting the actual dates
-        # here we remove 1 from the month because pandas views this as a minimum bound, if do the actual lowest day/month/year it will skip it.
-        # this logic prevents invalid dates, if the month is not 1, we go to the prior month
-        first_date = datetime.date(int(year), int(month), int(day)-1)
+        first_date = datetime.date(int(year), int(month), int(day))
         latest_date = datetime.date.today()
 
         latest_date = datetime.date.today()
@@ -429,7 +428,6 @@ def fill_missing_dates(cursor, results_list, date_range_symbol):
     
     return results_list_with_missing_dates
 
-
 # time_period is a string, either "day", "week", "month", "year"
 # metric_sql is the SQL statement comparing the metric (species, sightings, location) to the comparative
 # the comparative is what we are looking for (species name, location name, None for sightings)
@@ -460,31 +458,60 @@ def metric_over_time(time_period, metric_sql, comparative, fill_missing):
 
     return results_array_of_dictionaries   
 
-
-# calculates the metric over time, returns an array of sightings
+# calculates how many of a sightings there have been of a given species, in given time intervals
 def species_over_time(time_period, species, fill_missing):
     metric_sql = "WHERE `species` = (?)"
     results_array_of_dictionaries = metric_over_time(time_period, metric_sql, species, fill_missing)
 
     return results_array_of_dictionaries  
 
+# calculates how many sightings there have been in set time intervals
 def sightings_over_time(time_period, fill_missing):
     metric_sql = ""
     results_array_of_dictionaries = metric_over_time(time_period, metric_sql, None, fill_missing)
 
     return results_array_of_dictionaries  
 
+# calculates how many of a sightings there have been in a given location, in given time intervals
 def location_over_time(time_period, location, fill_missing):
     metric_sql = "WHERE `location` = (?)"
     results_array_of_dictionaries = metric_over_time(time_period, metric_sql, location, fill_missing)
 
     return results_array_of_dictionaries  
 
-
-
-# calculates the metric per category over time
-def metric_per_category_over_time(metric, category, time):
+# retreives all of the unique values for a given column
+def get_all_unique(subject):
     connection, cursor = tt_connect_to_database()
+
+    column_name = ""
+
+    #getting the correct column name since column names cannot be parameterised
+    if subject == "id":
+        column_name = "`id`"
+
+    elif subject == "date":
+        column_name = "`date`"
+
+    elif subject == "time":
+        column_name = "`time`"
+
+    elif subject == "location":
+        column_name = "`location`"
+
+    elif subject == "species":
+        column_name = "`species`"
+
+    elif subject == "latin_name":
+        column_name = "`latin_name`"
+
+    command = f"SELECT DISTINCT {column_name} FROM `sightings`;"
+    results = dbm.command_database(cursor, command)
+
+    # formats the returned list properly since it returns an array of single item arrays
+    results_formatted = []
+    for r in results:
+        results_formatted.append(r[0])
+    return results_formatted
 
 
 

@@ -75,7 +75,7 @@ def search():
 #   - filter_term_dictionary : dictionary : {"database column" : ["desired values"], "database column" : "desired value"} -> defines the columns and their desired terms 
 #   - filter_condition       : string     : "include" or "exclude" -> determines if a record must have, or must not have the terms   
 #   - case_sensitivity       : string     : "case sensitive" or "not case sensitive" -> determines if the search will check the case of the field when comparing
-#   - time_span_dictionary   : dictionary : {"date_from" : "yyyy.mm.dd", "date_to" : "yyyy.mm.dd", "time_from" : "hh.mm.ss", "time_to" : "hh.mm.ss"} -> defines a time span that the filter must be within
+#   - time_span_dictionary   : dictionary : {"date_min" : "yyyy-mm-dd", "date_max" : "yyyy-mm-dd", "time_min" : "hh-mm-ss", "time_max" : "hh-mm-ss"} -> defines a time span that the filter must be within
 #
 # -- FURTHER INFORMATION IN THE DOCUMENTATION FILE --
 @app.route("/filter", methods = ["POST"])
@@ -277,7 +277,32 @@ def location_over_time():
 
 
 
+#gets all the unique values from a given column, so every unique location, every unique species, etc
+@app.route("/get_all_unique", methods = ["POST"])
+def get_all_unique():
+    data = request.get_json()
+
+    # if the keys provided are correct the call proceeds
+    if is_key_in_json(data, ["field"]):
+        subject = data["field"]
+
+        # validating the time period
+        if  subject in DATABASE_INFORMATION["database_columns"]:
+
+            # running the actual function
+            results = tt.get_all_unique(subject)
+            return jsonify({"success" : "true",
+                            "result" : results})
+        
+        else:
+            return jsonify({"success" : "false", 
+                            "error" : f"Failed get_all_unique call, your field is not in the database, please choose an appropriate field : {DATABASE_INFORMATION["database_columns"]}"})
+    else:
+        return jsonify({"success" : "false", 
+                        "error" : "Failed get_all_unique, parameters are incorrect, please ensure you have only 'field' in your POST Json"})
+
+
 
 if __name__ == "__main__":
-    print(DATABASE_INFORMATION)
-    app.run(debug = True)
+    app.run(debug = False)
+    print(" -- flask server running -- ")

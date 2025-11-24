@@ -8,14 +8,8 @@ def filter_test():
         "filter_term_dictionary" : {"location" : ["London", "Newcastle", "Bristol"]},
         "filter_condition" : "exclude",
         "case_sensitivity" : "case sensitive",
-        "time_span_dictionary" : {"date_min" : "2019.01.01", "date_max" : "2019.12.31",
-                                  "time_min" : "00.00.00", "time_max" : "05.00.00"}
-    }
-    payload_json = {
-        "filter_term_dictionary" : {},
-        "filter_condition" : "exclude",
-        "case_sensitivity" : "case sensitive",
-        "time_span_dictionary" : {}
+        "time_span_dictionary" : {"date_min" : "2019-01-01", "date_max" : "2019-12.31",
+                                  "time_min" : "00-00-00", "time_max" : "05-00-00"}
     }
 
     response = requests.post(f"{URL}/filter", json = payload_json)
@@ -111,8 +105,11 @@ def x_over_time_tests():
     print(response.json())
 
 
-#filter_test()
+filter_test()
 #search_test()
 #x_per_y_tests()
 #search_test_wildcards()
-x_over_time_tests()
+#x_over_time_tests()
+
+#response = requests.post(f"{URL}/get_all_unique", json = {"field" : "location"})
+#print(response.json())
