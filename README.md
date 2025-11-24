@@ -39,9 +39,7 @@ I had to learn how to use Flask, as well as SQLite (although I had recently lear
 Dependencies
 ------------
 - flask
-- datetime
 - pandas
-- sqlite3
 - openpyxl
 
 Structure
