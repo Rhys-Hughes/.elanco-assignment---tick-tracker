@@ -42,6 +42,7 @@ Structure
 
 The overall structure of the system is simple, consisting of 4 components.
 
+
 flask_server : handles accepting, validating, and, returning requests, designed to decouple the interface from the business logic
 
 tick_tracker : handles the business logic, generating parameterised SQL commands, and working with the returned data to fulfil commands
@@ -50,7 +51,9 @@ database_manager : handles the connections to the database as well as executing 
 
 database : the actual database that contains the data
 
+
 So the workflow of a request goes as follows:
+
 
 [client] -> sends HTTP POST request to server -> 
 
